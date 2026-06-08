@@ -7,6 +7,12 @@ This is a **separate app** from the Poseidon Music Platform website. The website
 Resources section stays as-is; this is a focused, app-store-ready companion built
 mobile-first with an Instagram-style bottom tab bar.
 
+## Docs
+
+- [CLAUDE.md](./CLAUDE.md) — full project context: origin, decisions, architecture, status, next steps. **Start here.**
+- [docs/CONTENT_GUIDE.md](./docs/CONTENT_GUIDE.md) — how to add/replace lessons, categories, and glossary terms (copy-paste examples).
+- [docs/ROADMAP.md](./docs/ROADMAP.md) — what's done and what's next.
+
 ---
 
 ## Stack
