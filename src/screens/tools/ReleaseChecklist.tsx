@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Check, RotateCcw } from 'lucide-react'
-
-// A self-contained release-prep checklist. Progress persists to localStorage
-// so an artist can tick items off across sessions while prepping a release.
+import { AnimatePresence, motion } from 'framer-motion'
+import { screenStagger, fadeUp } from '@/lib/animations'
 
 const STORAGE_KEY = 'poseidon.checklist.release.v1'
 
@@ -72,26 +71,39 @@ export function ReleaseChecklist({ onBack }: { onBack: () => void }) {
   }, [checked])
 
   const done = ALL.filter((i) => checked[i]).length
-  const pct = Math.round((done / ALL.length) * 100)
+  const pct = done / ALL.length
 
   return (
     <div className="min-h-full bg-bg">
       <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-bg/95 px-3 py-3 backdrop-blur pt-safe">
-        <button onClick={onBack} className="p-1 text-muted active:text-text">
+        <motion.button
+          onClick={onBack}
+          whileTap={{ scale: 0.88 }}
+          className="p-1 text-muted active:text-text"
+        >
           <ArrowLeft size={20} />
-        </button>
+        </motion.button>
         <h1 className="font-semibold text-text">Release Checklist</h1>
-        <button
+        <motion.button
+          whileTap={{ scale: 0.9 }}
           onClick={() => setChecked({})}
           className="ml-auto flex items-center gap-1 text-xs text-muted active:text-text"
         >
           <RotateCcw size={14} /> Reset
-        </button>
+        </motion.button>
       </header>
 
-      <div className="px-4 pb-28 pt-4">
-        {/* Progress */}
-        <div className="rounded-2xl border border-border bg-surface p-4">
+      <motion.div
+        className="px-4 pb-28 pt-4"
+        variants={screenStagger}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Progress card */}
+        <motion.div
+          variants={fadeUp}
+          className="rounded-2xl border border-border bg-surface p-4"
+        >
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted">Progress</span>
             <span className="text-sm font-semibold text-gold">
@@ -99,15 +111,19 @@ export function ReleaseChecklist({ onBack }: { onBack: () => void }) {
             </span>
           </div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-2">
-            <div
-              className="h-full rounded-full bg-gold transition-all"
-              style={{ width: `${pct}%` }}
+            {/* GPU-safe: animate scaleX from left instead of width */}
+            <motion.div
+              className="h-full origin-left rounded-full bg-gold"
+              animate={{ scaleX: pct }}
+              initial={{ scaleX: 0 }}
+              transition={{ type: 'spring', stiffness: 100, damping: 22 }}
             />
           </div>
-        </div>
+        </motion.div>
 
+        {/* Checklist sections stagger in */}
         {SECTIONS.map((section) => (
-          <section key={section.title} className="mt-6">
+          <motion.section key={section.title} variants={fadeUp} className="mt-6">
             <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
               {section.title}
             </h2>
@@ -115,32 +131,52 @@ export function ReleaseChecklist({ onBack }: { onBack: () => void }) {
               {section.items.map((item) => {
                 const on = !!checked[item]
                 return (
-                  <button
+                  <motion.button
                     key={item}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() =>
                       setChecked((prev) => ({ ...prev, [item]: !prev[item] }))
                     }
                     className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-surface-2"
                   >
+                    {/* Checkbox: color transitions via CSS; checkmark springs in */}
                     <span
-                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors duration-150 ${
                         on ? 'border-gold bg-gold' : 'border-border'
                       }`}
                     >
-                      {on && <Check size={14} className="text-bg" strokeWidth={3} />}
+                      <AnimatePresence>
+                        {on && (
+                          <motion.span
+                            initial={{ scale: 0, rotate: -15 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            exit={{ scale: 0, opacity: 0 }}
+                            transition={{
+                              type: 'spring',
+                              stiffness: 560,
+                              damping: 20,
+                            }}
+                          >
+                            <Check size={14} className="text-bg" strokeWidth={3} />
+                          </motion.span>
+                        )}
+                      </AnimatePresence>
                     </span>
+
                     <span
-                      className={`text-[15px] ${on ? 'text-muted line-through' : 'text-text'}`}
+                      className={`text-[15px] transition-colors duration-150 ${
+                        on ? 'text-muted line-through' : 'text-text'
+                      }`}
                     >
                       {item}
                     </span>
-                  </button>
+                  </motion.button>
                 )
               })}
             </div>
-          </section>
+          </motion.section>
         ))}
-      </div>
+      </motion.div>
     </div>
   )
 }

@@ -1,26 +1,35 @@
 import { ChevronRight } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { categories, lessons } from '@/data/content'
 import { Icon } from '@/components/Icon'
 import { useNav } from '@/context/NavContext'
+import { screenStagger, fadeUp } from '@/lib/animations'
 
 export function Learn() {
   const { openCategory } = useNav()
 
   return (
-    <div className="px-4 pb-28 pt-safe">
-      <header className="pt-5">
+    <motion.div
+      className="px-4 pb-28 pt-safe"
+      variants={screenStagger}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.header variants={fadeUp} className="pt-5">
         <h1 className="text-2xl font-bold text-text">Learn</h1>
         <p className="mt-1 text-sm text-muted">
           {lessons.length} lessons across {categories.length} topics.
         </p>
-      </header>
+      </motion.header>
 
       <div className="mt-5 space-y-3">
         {categories.map((c) => {
           const count = lessons.filter((l) => l.categoryId === c.id).length
           return (
-            <button
+            <motion.button
               key={c.id}
+              variants={fadeUp}
+              whileTap={{ scale: 0.97 }}
               onClick={() => openCategory(c.id)}
               className="flex w-full items-center gap-4 rounded-2xl border border-border bg-surface p-4 text-left active:bg-surface-2"
             >
@@ -35,10 +44,10 @@ export function Learn() {
                 {count}
                 <ChevronRight size={16} />
               </span>
-            </button>
+            </motion.button>
           )
         })}
       </div>
-    </div>
+    </motion.div>
   )
 }

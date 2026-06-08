@@ -1,17 +1,52 @@
 # Poseidon Academy
 
-A mobile-first learning app for independent artists — the music business, explained.
-Bundled lessons, a glossary, and a release checklist, all working fully offline.
+A mobile-first learning app for independent artists — the music business, explained in short lessons, with a glossary and interactive tools. Works fully offline.
 
-This is a **separate app** from the Poseidon Music Platform website. The website's
-Resources section stays as-is; this is a focused, app-store-ready companion built
-mobile-first with an Instagram-style bottom tab bar.
+Built with React + Vite + TypeScript, wrapped in Capacitor for iOS and Android.
 
-## Docs
+---
 
-- [CLAUDE.md](./CLAUDE.md) — full project context: origin, decisions, architecture, status, next steps. **Start here.**
-- [docs/CONTENT_GUIDE.md](./docs/CONTENT_GUIDE.md) — how to add/replace lessons, categories, and glossary terms (copy-paste examples).
-- [docs/ROADMAP.md](./docs/ROADMAP.md) — what's done and what's next.
+## Screenshots
+
+<div align="center">
+  <img src="docs/screenshots/home.png" width="30%" alt="Home" />
+  &nbsp;
+  <img src="docs/screenshots/learn.png" width="30%" alt="Learn" />
+  &nbsp;
+  <img src="docs/screenshots/category.png" width="30%" alt="Category" />
+</div>
+
+<br/>
+
+<div align="center">
+  <img src="docs/screenshots/lesson.png" width="30%" alt="Lesson" />
+  &nbsp;
+  <img src="docs/screenshots/tools.png" width="30%" alt="Tools" />
+  &nbsp;
+  <img src="docs/screenshots/glossary.png" width="30%" alt="Glossary" />
+</div>
+
+<br/>
+
+<div align="center">
+  <img src="docs/screenshots/checklist.png" width="30%" alt="Release Checklist" />
+  &nbsp;
+  <img src="docs/screenshots/search.png" width="30%" alt="Search" />
+</div>
+
+---
+
+## What it is
+
+Poseidon Academy is a standalone mobile app (separate repo from the Poseidon Music Platform website). It takes the website's Resources section as inspiration and builds a focused, app-store-ready companion:
+
+- **5-tab bottom navigation** — Home, Learn, Tools, Search, Saved
+- **Lessons** — short structured articles across 6 topic categories
+- **Glossary** — searchable A–Z accordion of music business terms
+- **Release Checklist** — 8-week prep list with persistent progress
+- **Bookmarks** — save any lesson to read later, stored offline
+- **Global Search** — searches lessons and glossary simultaneously
+- **No backend** — everything ships in the bundle, works offline
 
 ---
 
@@ -20,49 +55,29 @@ mobile-first with an Instagram-style bottom tab bar.
 | Layer | Tech |
 |---|---|
 | UI | React 19 + Vite + TypeScript |
-| Styling | Tailwind CSS v4 (`@tailwindcss/vite`) |
+| Styling | Tailwind CSS v4 |
 | Animation | Framer Motion |
 | Icons | Lucide React |
-| Native shell | Capacitor (iOS + Android) |
-| Content | Bundled TypeScript data — no backend, fully offline |
+| Native shell | Capacitor 8 (iOS + Android) |
+| Content | Bundled TypeScript — no backend |
 
-Theme mirrors the Poseidon website: gold accent (`#c9a94e`) on a near-black surface.
+Theme: gold (`#c9a94e`) on near-black (`#0a0a0a`), matching the Poseidon website.
 
 ---
 
-## Structure
+## Animations
 
-```
-src/
-  data/content.ts          — all lessons, categories, and glossary terms (the content contract)
-  context/
-    NavContext.tsx         — bottom-tab + detail-view navigation (no router)
-    SavedContext.tsx       — bookmarked lessons, persisted to localStorage
-  components/
-    BottomNav.tsx          — 5-tab bar (Home / Learn / Tools / Search / Saved)
-    LessonCard.tsx         — tappable lesson card with bookmark toggle
-    Blocks.tsx             — renders structured lesson bodies
-    Icon.tsx               — tree-shaken lucide icon registry
-  screens/
-    Home.tsx               — featured lesson, category grid, fresh picks
-    Learn.tsx              — all categories
-    Tools.tsx              — hub linking to the two interactive tools
-    tools/Glossary.tsx     — searchable A–Z glossary accordion
-    tools/ReleaseChecklist.tsx — 8-week prep checklist, progress persisted
-    Search.tsx             — searches lessons + glossary
-    Saved.tsx              — bookmarked lessons
-    LessonDetail.tsx       — lesson reader
-    CategoryDetail.tsx     — lessons within a category
-  App.tsx                  — providers + shell wiring
-```
+Every interaction is animated with Framer Motion spring physics:
 
-### Adding content
-
-All content lives in `src/data/content.ts`. The team replaces `lessons` and
-`glossary` with curated material; the UI renders against the `Lesson`, `Category`,
-and `GlossaryTerm` types defined there. Lesson bodies are structured `Block`s
-(`paragraph`, `heading`, `list`, `steps`, `callout`) so there is no raw HTML to
-sanitize.
+- **Tab switching** — sliding gold pill indicator (FLIP animation via `layoutId`) + icon scale spring
+- **Push navigation** — lessons and categories slide in from the right, exit to the right on back
+- **Screen entrance** — all content staggers in with cascading fade-up (65ms between items)
+- **Lesson body** — each block (heading, paragraph, list, callout) fades up sequentially
+- **Glossary accordion** — height animates 0 → auto with spring; chevron rotates
+- **Bookmark toggle** — springs in with rotation on every state flip
+- **Checklist items** — checkmark springs in with a pop; progress bar uses GPU-safe `scaleX`
+- **Search** — result sections fade in; clear button springs in/out; gold focus ring on input
+- **Tools sub-navigation** — hub ↔ Glossary ↔ Checklist uses `AnimatePresence mode="wait"`
 
 ---
 
@@ -70,10 +85,12 @@ sanitize.
 
 ```bash
 npm install
-npm run dev          # http://localhost:5173 — resize to a phone width
-npm run build        # typecheck + production build into dist/
+npm run dev        # http://localhost:5173 — resize to ~390px width for phone preview
+npm run build      # typecheck + production build
 npm run lint
 ```
+
+To preview on a real phone on the same WiFi, run `npm run dev -- --host` and open the network URL in your phone's browser.
 
 ---
 
@@ -83,18 +100,31 @@ npm run lint
 npm run build
 npx cap add ios          # one-time, requires Xcode
 npx cap add android      # one-time, requires Android Studio
-npm run cap:ios          # build + sync + open in Xcode
-npm run cap:android      # build + sync + open in Android Studio
+npm run cap:ios          # build + sync + open Xcode
+npm run cap:android      # build + sync + open Android Studio
 ```
 
-`capacitor.config.ts` sets the app id `com.poseidonholdings.academy` and dark
-background. If you only ship to Google Play, the build also works as a PWA — Apple
-requires the Capacitor native shell for App Store submission.
+App id: `com.poseidonholdings.academy`
 
 ---
 
-## Notes
+## Content
 
-- No backend, no auth, no network calls — everything ships in the bundle.
-- Bookmarks and checklist progress live in `localStorage` (native WebView storage on device).
-- The `ios/` and `android/` native folders are generated by `cap add` and are gitignored until you commit them intentionally.
+All content lives in [`src/data/content.ts`](src/data/content.ts) — lessons, categories, and glossary terms. The current content is placeholder. See [`docs/CONTENT_GUIDE.md`](docs/CONTENT_GUIDE.md) for how to add or replace it.
+
+Persistence: bookmarks → `poseidon.saved.v1`, checklist → `poseidon.checklist.release.v1` (both in `localStorage`, mapped to native WebView storage on device).
+
+---
+
+## Docs
+
+- [CLAUDE.md](CLAUDE.md) — full project context, architecture, and decisions
+- [docs/CONTENT_GUIDE.md](docs/CONTENT_GUIDE.md) — how to add lessons, categories, and glossary terms
+- [docs/ROADMAP.md](docs/ROADMAP.md) — what's done and what's next
+
+---
+
+## Team
+
+- **Yashmit Bhaverisetti** — Engineering
+- **Johnytiger [TSR]** — Management

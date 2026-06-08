@@ -1,4 +1,4 @@
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { NavProvider, useNav } from '@/context/NavContext'
 import { SavedProvider } from '@/context/SavedContext'
 import { BottomNav } from '@/components/BottomNav'
@@ -14,25 +14,33 @@ function Shell() {
   const { tab, detail } = useNav()
 
   return (
-    <div className="mx-auto min-h-dvh max-w-md bg-bg text-text">
-      {/* Detail views stack over the active tab. */}
-      <AnimatePresence mode="wait">
-        {detail ? (
-          detail.kind === 'lesson' ? (
-            <LessonDetail key={`lesson-${detail.id}`} id={detail.id} />
+    <div className="mx-auto max-w-md bg-bg text-text">
+      {/* overflow-x-hidden only on content — applying it to the outer shell breaks
+          position:fixed on iOS Safari (fixed becomes relative to the overflow container) */}
+      <div className="overflow-x-hidden">
+        <AnimatePresence mode="wait">
+          {detail ? (
+            detail.kind === 'lesson' ? (
+              <LessonDetail key={`lesson-${detail.id}`} id={detail.id} />
+            ) : (
+              <CategoryDetail key={`cat-${detail.id}`} id={detail.id} />
+            )
           ) : (
-            <CategoryDetail key={`cat-${detail.id}`} id={detail.id} />
-          )
-        ) : (
-          <main key={tab}>
-            {tab === 'home' && <Home />}
-            {tab === 'learn' && <Learn />}
-            {tab === 'tools' && <Tools />}
-            {tab === 'search' && <Search />}
-            {tab === 'saved' && <Saved />}
-          </main>
-        )}
-      </AnimatePresence>
+            <motion.main
+              key={tab}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { duration: 0.14, ease: 'easeOut' } }}
+              exit={{ opacity: 0, transition: { duration: 0.1, ease: 'easeIn' } }}
+            >
+              {tab === 'home' && <Home />}
+              {tab === 'learn' && <Learn />}
+              {tab === 'tools' && <Tools />}
+              {tab === 'search' && <Search />}
+              {tab === 'saved' && <Saved />}
+            </motion.main>
+          )}
+        </AnimatePresence>
+      </div>
 
       <BottomNav />
     </div>
