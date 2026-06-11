@@ -1,16 +1,17 @@
 import { useMemo, useState } from 'react'
 import { ArrowLeft, ChevronDown, Search, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { glossary } from '@/data/content'
+import { useContent } from '@/context/ContentContext'
 
 export function Glossary({ onBack }: { onBack: () => void }) {
   const [q, setQ] = useState('')
   const [open, setOpen] = useState<string | null>(null)
+  const { glossary } = useContent()
   const query = q.trim().toLowerCase()
 
   const sorted = useMemo(
     () => [...glossary].sort((a, b) => a.term.localeCompare(b.term)),
-    [],
+    [glossary],
   )
   const filtered = useMemo(
     () =>

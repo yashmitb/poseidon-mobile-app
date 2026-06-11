@@ -1,7 +1,7 @@
 import { Bookmark } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { lessons } from '@/data/content'
 import { LessonCard } from '@/components/LessonCard'
+import { useContent } from '@/context/ContentContext'
 import { useSaved } from '@/context/SavedContext'
 import { useNav } from '@/context/NavContext'
 import { screenStagger, fadeUp, scaleIn } from '@/lib/animations'
@@ -9,6 +9,7 @@ import { screenStagger, fadeUp, scaleIn } from '@/lib/animations'
 export function Saved() {
   const { saved } = useSaved()
   const { setTab } = useNav()
+  const { lessons } = useContent()
   const items = saved
     .map((id) => lessons.find((l) => l.id === id))
     .filter((l): l is NonNullable<typeof l> => Boolean(l))

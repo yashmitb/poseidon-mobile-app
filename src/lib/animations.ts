@@ -10,6 +10,8 @@ export const springs = {
   smooth: { type: 'spring' as const, stiffness: 320, damping: 28 },
   // Bookmarks, checkboxes, celebrations — satisfying pop
   bouncy: { type: 'spring' as const, stiffness: 460, damping: 20 },
+  // Liquid glass nav pill — soft overshoot, fluid morph between tabs
+  liquid: { type: 'spring' as const, stiffness: 280, damping: 22 },
 }
 
 // ─── Screen-level stagger container ──────────────────────────────────────────

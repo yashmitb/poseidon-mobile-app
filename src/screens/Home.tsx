@@ -1,8 +1,8 @@
 import { ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { categories, lessons } from '@/data/content'
 import { Icon } from '@/components/Icon'
 import { LessonCard } from '@/components/LessonCard'
+import { useContent } from '@/context/ContentContext'
 import { useNav } from '@/context/NavContext'
 import { screenStagger, sectionStagger, fadeUp } from '@/lib/animations'
 
@@ -10,6 +10,7 @@ const FEATURED_ID = 'release-timeline'
 
 export function Home() {
   const { openLesson, openCategory, setTab } = useNav()
+  const { categories, lessons } = useContent()
   const featured = lessons.find((l) => l.id === FEATURED_ID) ?? lessons[0]
   const fresh = lessons.filter((l) => l.id !== featured.id).slice(0, 3)
 

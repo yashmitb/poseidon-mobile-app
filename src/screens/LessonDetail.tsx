@@ -1,13 +1,14 @@
 import { ArrowLeft, Bookmark, Clock } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { lessons, categories } from '@/data/content'
 import { Blocks } from '@/components/Blocks'
+import { useContent } from '@/context/ContentContext'
 import { useNav } from '@/context/NavContext'
 import { useSaved } from '@/context/SavedContext'
 
 export function LessonDetail({ id }: { id: string }) {
   const { back } = useNav()
   const { isSaved, toggle } = useSaved()
+  const { lessons, categories } = useContent()
   const lesson = lessons.find((l) => l.id === id)
 
   if (!lesson) {

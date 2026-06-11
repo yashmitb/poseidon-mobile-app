@@ -1,12 +1,13 @@
 import { ChevronRight } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { categories, lessons } from '@/data/content'
 import { Icon } from '@/components/Icon'
+import { useContent } from '@/context/ContentContext'
 import { useNav } from '@/context/NavContext'
 import { screenStagger, fadeUp } from '@/lib/animations'
 
 export function Learn() {
   const { openCategory } = useNav()
+  const { categories, lessons } = useContent()
 
   return (
     <motion.div

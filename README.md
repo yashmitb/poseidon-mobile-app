@@ -1,6 +1,6 @@
 # Poseidon Academy
 
-A mobile-first learning app for independent artists — the music business, explained in short lessons, with a glossary and interactive tools. Works fully offline.
+A mobile-first learning app for independent artists — the music business, explained in short lessons, with a glossary and interactive tools. Content is fetched from the Academy backend and cached on-device, so it keeps working offline.
 
 Built with React + Vite + TypeScript, wrapped in Capacitor for iOS and Android.
 
@@ -46,7 +46,8 @@ Poseidon Academy is a standalone mobile app (separate repo from the Poseidon Mus
 - **Release Checklist** — 8-week prep list with persistent progress
 - **Bookmarks** — save any lesson to read later, stored offline
 - **Global Search** — searches lessons and glossary simultaneously
-- **No backend** — everything ships in the bundle, works offline
+- **Backend-driven, offline-cached** — content comes from the Academy content API and is
+  cached on-device; a small bundled fallback covers first launch with no connectivity
 
 ---
 
@@ -59,7 +60,7 @@ Poseidon Academy is a standalone mobile app (separate repo from the Poseidon Mus
 | Animation | Framer Motion |
 | Icons | Lucide React |
 | Native shell | Capacitor 8 (iOS + Android) |
-| Content | Bundled TypeScript — no backend |
+| Content | Fetched from the Academy content API, cached on-device; bundled fallback for offline first-launch |
 
 Theme: gold (`#c9a94e`) on near-black (`#0a0a0a`), matching the Poseidon website.
 
@@ -110,9 +111,19 @@ App id: `com.poseidonholdings.academy`
 
 ## Content
 
-All content lives in [`src/data/content.ts`](src/data/content.ts) — lessons, categories, and glossary terms. The current content is placeholder. See [`docs/CONTENT_GUIDE.md`](docs/CONTENT_GUIDE.md) for how to add or replace it.
+Content (lessons, categories, glossary, checklist) is fetched from the Academy content
+API on the Poseidon Music Platform backend and cached on-device by
+[`src/context/ContentContext.tsx`](src/context/ContentContext.tsx). Real content is
+managed by an admin via that backend — no app-store release needed for content changes.
+[`src/data/seedContent.ts`](src/data/seedContent.ts) holds a small bundled fallback used
+only for first launch with no connectivity. See [`docs/CONTENT_GUIDE.md`](docs/CONTENT_GUIDE.md)
+for the content shapes and how the fallback works.
 
-Persistence: bookmarks → `poseidon.saved.v1`, checklist → `poseidon.checklist.release.v1` (both in `localStorage`, mapped to native WebView storage on device).
+Set `VITE_API_BASE_URL` (see [`.env.example`](.env.example)) to point at the backend.
+
+Persistence: cached content → `poseidon.content.v1`, bookmarks → `poseidon.saved.v1`,
+checklist → `poseidon.checklist.release.v1` (all in `localStorage`, mapped to native
+WebView storage on device).
 
 ---
 

@@ -1,27 +1,33 @@
 # Content Guide — Poseidon Academy
 
-Everything the app shows comes from one file: [`src/data/content.ts`](../src/data/content.ts).
-You do not need to touch any UI code to add or change lessons, categories, or glossary
-terms. This guide shows exactly how, with copy-paste examples.
+The app's content (lessons, categories, glossary, checklist) is fetched from the Academy
+content API on the Poseidon Music Platform backend and cached on-device by
+[`src/context/ContentContext.tsx`](../src/context/ContentContext.tsx). Real content is
+entered by an admin via the Academy admin page on that backend — **not** by editing files
+in this repo.
 
-> The content shipping today is **placeholder** — written to look right and demo the app.
-> Replace it with the team's curated material.
+[`src/data/content.ts`](../src/data/content.ts) holds only the TypeScript types — the
+shapes below — which both this app's UI and the backend API response must match.
+[`src/data/seedContent.ts`](../src/data/seedContent.ts) holds a small bundled fallback
+used only on first launch with no connectivity and no cache yet.
+
+> If you're adding content for local development/testing without a live backend, edit
+> `seedContent.ts`. It is **not** the source of truth for production content.
 
 ---
 
-## The three lists
+## The four lists
 
-`content.ts` exports three arrays:
+`useContent()` (from `ContentContext`) returns:
 
 - `categories` — the topics shown on Home and Learn.
 - `lessons` — the articles. Each belongs to one category.
 - `glossary` — the dictionary terms shown in the Glossary tool and Search.
+- `checklist` — the Release Checklist sections and items.
 
 ---
 
-## Add a lesson
-
-Add an object to the `lessons` array:
+## Lesson shape
 
 ```ts
 {
@@ -45,8 +51,8 @@ Add an object to the `lessons` array:
 }
 ```
 
-That's it. The lesson now appears in Learn, in its category, in Search, and can be
-bookmarked — no other changes needed.
+A lesson with this shape automatically appears in Learn, in its category, in Search, and
+can be bookmarked — no UI changes needed.
 
 ### Body block types
 
@@ -64,13 +70,12 @@ Use `steps` for ordered "do this, then this." Use `list` for unordered points. U
 `callout` for the single most important takeaway — one per lesson reads best.
 
 > Do not put raw HTML in text. It renders as plain text on purpose (safer, consistent).
-> If you need a new layout, ask an engineer to add a block type.
+> If you need a new layout, the `Block` union and `Blocks.tsx` (this repo) AND the
+> backend response shape both need to be extended together — ask an engineer.
 
 ---
 
-## Add a category
-
-Add an object to the `categories` array:
+## Category shape
 
 ```ts
 {
@@ -81,9 +86,9 @@ Add an object to the `categories` array:
 }
 ```
 
-**Icon note (important):** the `icon` is the name of a [Lucide](https://lucide.dev/icons)
-icon. Icons must also be registered, or you'll get a fallback circle. An engineer adds it
-in one line in [`src/components/Icon.tsx`](../src/components/Icon.tsx):
+**Icon note (important):** `icon` is the name of a [Lucide](https://lucide.dev/icons)
+icon, and must be registered in this repo's [`src/components/Icon.tsx`](../src/components/Icon.tsx)
+or it falls back to a plain circle. An engineer adds it in one line:
 
 ```ts
 import { Mic } from 'lucide-react'   // add the import
@@ -91,12 +96,12 @@ const ICONS = { ...existing, Mic }   // add to the registry
 ```
 
 (We register icons explicitly instead of importing all of Lucide, to keep the app small.)
+This applies to icon names coming from the backend too — adding a new category icon on
+the backend requires a small app update to register it here.
 
 ---
 
-## Add a glossary term
-
-Add an object to the `glossary` array:
+## Glossary term shape
 
 ```ts
 {
@@ -110,22 +115,41 @@ Terms appear in the Glossary tool (A–Z, searchable) and in global Search autom
 
 ---
 
-## A few specifics
+## Checklist shape
 
-- **Home featured lesson:** the big card on Home is controlled by `FEATURED_ID` near the
-  top of [`src/screens/Home.tsx`](../src/screens/Home.tsx). Point it at any lesson `id`.
-- **Release Checklist items** are NOT in `content.ts`. They live in `SECTIONS` inside
-  [`src/screens/tools/ReleaseChecklist.tsx`](../src/screens/tools/ReleaseChecklist.tsx).
-  Edit them there.
-- **Order:** lessons show in array order within a category. Glossary is auto-sorted A–Z.
+```ts
+{
+  id: 1,
+  title: '8 weeks out',
+  items: [
+    { id: 1, text: 'Final master approved and exported' },
+    { id: 2, text: 'Cover artwork finalized (3000×3000, no logos)' },
+  ],
+}
+```
+
+`checklist` is an array of these sections. Item completion is persisted in `localStorage`
+keyed by `item.id`, so ids must be **stable** — don't reuse or renumber an existing item's
+id, or users will lose their checked state for it.
 
 ---
 
-## After editing
+## A few specifics
+
+- **Home featured lesson:** the big card on Home is controlled by `FEATURED_ID` near the
+  top of [`src/screens/Home.tsx`](../src/screens/Home.tsx). Point it at any lesson `id`
+  that exists on the backend.
+- **Order:** lessons show in array order within a category. Glossary is auto-sorted A–Z.
+  Checklist sections/items render in array order.
+
+---
+
+## After editing seedContent.ts
 
 ```bash
 npm run build      # confirms there are no typos/type errors
 npm run dev        # preview at localhost:5173 (resize to phone width)
 ```
 
-If `build` passes, the content is valid and the app will render it.
+If `build` passes, the content is valid and the app will render it as the offline
+fallback.

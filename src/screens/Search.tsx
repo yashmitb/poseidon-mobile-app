@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Search as SearchIcon, X } from 'lucide-react'
-import { glossary, lessons } from '@/data/content'
 import { LessonCard } from '@/components/LessonCard'
+import { useContent } from '@/context/ContentContext'
 import { screenStagger, fadeUp } from '@/lib/animations'
 
 export function Search() {
   const [q, setQ] = useState('')
+  const { glossary, lessons } = useContent()
   const query = q.trim().toLowerCase()
 
   const lessonHits = useMemo(() => {
@@ -16,7 +17,7 @@ export function Search() {
         l.title.toLowerCase().includes(query) ||
         l.summary.toLowerCase().includes(query),
     )
-  }, [query])
+  }, [query, lessons])
 
   const termHits = useMemo(() => {
     if (!query) return []
@@ -25,7 +26,7 @@ export function Search() {
         t.term.toLowerCase().includes(query) ||
         t.definition.toLowerCase().includes(query),
     )
-  }, [query])
+  }, [query, glossary])
 
   const empty = query && lessonHits.length === 0 && termHits.length === 0
 

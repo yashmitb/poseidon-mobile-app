@@ -1,13 +1,14 @@
 import { ArrowLeft } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { categories, lessons } from '@/data/content'
 import { Icon } from '@/components/Icon'
 import { LessonCard } from '@/components/LessonCard'
+import { useContent } from '@/context/ContentContext'
 import { useNav } from '@/context/NavContext'
 import { screenStagger, fadeUp } from '@/lib/animations'
 
 export function CategoryDetail({ id }: { id: string }) {
   const { back } = useNav()
+  const { categories, lessons } = useContent()
   const category = categories.find((c) => c.id === id)
   const items = lessons.filter((l) => l.categoryId === id)
 

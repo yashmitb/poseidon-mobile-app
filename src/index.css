@@ -26,6 +26,14 @@ body,
   height: 100%;
 }
 
+/* Always reserve scrollbar space so the viewport width is identical on
+   scrolling (Home) and non-scrolling (Search) pages. Without this, the
+   fixed bottom nav — centered to the viewport — visibly shifts sideways
+   when navigating between those pages. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);

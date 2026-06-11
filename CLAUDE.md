@@ -8,8 +8,9 @@ of the **Poseidon Academy mobile app** without re-reading any prior conversation
 ## What This Is
 
 Poseidon Academy is a **mobile-first learning app for independent artists** — the music
-business, explained in short lessons, plus a glossary and interactive tools. It works
-fully offline with no backend.
+business, explained in short lessons, plus a glossary and interactive tools. Content is
+managed by an admin on the Poseidon Music Platform backend and served to the app, which
+caches it on-device so the app keeps working offline.
 
 It is a **separate app and a separate git repo** from the main Poseidon Music Platform
 website. They share a design language (gold-on-black) and a parent topic (helping
@@ -35,7 +36,11 @@ This came out of a Discord conversation between **Yashmit** (engineering) and
 - **Tech: Capacitor-ready React mobile web app.** Capacitor wraps the built web app into
   real iOS/Android app-store binaries. If only shipping to Google Play, it also works as
   a PWA. (Apple rejects thin PWA wrappers under guideline 4.2 — that's why Capacitor.)
-- **Content: bundled in the app** (offline, no backend) for V1.
+- **Content: backend-driven, offline-cached.** Content is fetched from the Academy
+  content API (poseidon-music-platform backend, its own `academy_*` tables, single
+  admin login — see "Relationship to the Website" below) and cached in `localStorage`
+  so the app works offline after first load. A small bundled `seedContent.ts` is the
+  last-resort fallback for first launch with no connectivity.
 - **5 bottom tabs.**
 - **App working name:** "Poseidon Academy" (no specific name was mandated).
 - **Repo location:** sibling folder of the website repo:
@@ -49,9 +54,12 @@ This came out of a Discord conversation between **Yashmit** (engineering) and
 **Built, building clean, committed.** Initial commit is in place (its own repo, `main`).
 Not yet pushed to GitHub — see "Next steps."
 
-- `npm run build` passes (TypeScript + Vite). Bundle ~355 kB JS (~112 kB gzipped).
+- `npm run build` passes (TypeScript + Vite). Bundle ~361 kB JS (~113 kB gzipped).
 - `npm run lint` clean.
 - No tests yet (no Playwright/Vitest set up — see "Next steps").
+- Content layer now fetches from the Academy content API and caches it on-device
+  (`ContentContext`); `seedContent.ts` is the offline-first-launch fallback. This
+  supersedes the earlier V1 "no backend / network" decision.
 
 ---
 
@@ -64,11 +72,13 @@ Not yet pushed to GitHub — see "Next steps."
 | Animation | Framer Motion |
 | Icons | Lucide React (no emojis in UI — established convention) |
 | Native shell | Capacitor 8 (`@capacitor/core`, `/cli`, `/ios`, `/android`) |
-| Content | Bundled TypeScript data in `src/data/content.ts` — no backend, fully offline |
+| Content | Fetched from the Academy content API (poseidon-music-platform backend), cached on-device; `src/data/seedContent.ts` is the bundled offline fallback |
 | Persistence | `localStorage` (maps to native WebView storage on device) |
 
-There is **no** server, database, auth, network call, or environment variable. Everything
-ships in the bundle.
+The app talks to one backend endpoint (`GET {VITE_API_BASE_URL}/api/academy/content`,
+public/no-auth) and otherwise has no server, database, or auth of its own. See
+"Content model" below and "Relationship to the Website" for the API contract and
+env var setup.
 
 ---
 
@@ -134,9 +144,10 @@ An array of bookmarked lesson IDs, persisted to `localStorage` under key
 `poseidon.saved.v1`. `toggle(id)`, `isSaved(id)`, and `saved` (most-recent-first order).
 Used by `LessonCard`, `LessonDetail`, and the `Saved` screen.
 
-### Content model (`src/data/content.ts`) — the most important file
+### Content model (`src/data/content.ts`) — types only
 
-This is the single source of all content and the contract the UI renders against.
+`content.ts` holds only the type definitions — the contract the UI renders against and
+that the backend API response must match:
 
 ```ts
 type Block =
@@ -168,26 +179,55 @@ interface GlossaryTerm {
   definition: string
   category: string           // free-text grouping label (e.g. "Royalties")
 }
+
+interface ChecklistItem {
+  id: number                 // stable id — completion state is keyed on this
+  text: string
+}
+
+interface ChecklistSection {
+  id: number
+  title: string
+  items: ChecklistItem[]
+}
 ```
 
-Exports: `categories` (6), `lessons` (12), `glossary` (22). **All placeholder** — modeled
-on real music-business topics but written to be replaced by the team's curated material.
+### Content loading (`src/context/ContentContext.tsx`)
 
-### How to add / replace content (do this when the team delivers material)
+`ContentProvider` (wraps the app in `App.tsx`, outermost provider) is the single source
+of `categories`, `lessons`, `glossary`, and `checklist` at runtime:
 
-1. **Lessons:** add objects to the `lessons` array. Give each a unique `id`, point
-   `categoryId` at an existing category, and write the body as `Block`s. That's it — it
-   appears in Learn, category pages, search, and is bookmarkable automatically.
-2. **Categories:** add to `categories`. The `icon` must be a lucide icon **name** that is
-   also added to the registry in `src/components/Icon.tsx` (see next point).
-3. **Icons:** `Icon.tsx` is an explicit map, NOT a barrel import. Reason: `import * as
-   Lucide` pulled ~700 kB of unused icons into the bundle. To use a new category icon,
-   import it by name and add it to the `ICONS` record. Unknown names fall back to `Circle`.
-4. **Glossary:** add to the `glossary` array. Powers both the Glossary tool and global Search.
-5. **Featured lesson on Home:** `Home.tsx` has `FEATURED_ID = 'release-timeline'`. Update
-   it if you rename/remove that lesson.
-6. **Release Checklist:** its items are a separate hardcoded list inside
-   `src/screens/tools/ReleaseChecklist.tsx` (`SECTIONS`), not in `content.ts`. Edit there.
+1. On mount, synchronously reads `localStorage['poseidon.content.v1']`. If present, uses
+   it as initial state; otherwise falls back to `src/data/seedContent.ts`.
+2. In an effect, fetches `GET {VITE_API_BASE_URL}/api/academy/content` (public, no auth).
+   If the response's `updatedAt` differs from the cached value, updates state and
+   localStorage. On any failure (offline, unreachable, no env var set), silently keeps
+   the current cached/seed content.
+3. `useContent()` returns `{ categories, lessons, glossary, checklist, loading }`.
+
+`src/data/seedContent.ts` holds the bundled placeholder `categories` (6), `lessons` (12),
+`glossary` (22), and a 5-section `checklist` — used **only** as a last-resort fallback
+before any cache exists. Real content is managed via the Academy admin on the
+poseidon-music-platform backend (see "Relationship to the Website").
+
+### How content reaches the app
+
+1. An admin edits content via the Academy admin page on poseidon-music-platform
+   (`AcademyAdminPage.tsx`, separate `academy_*` tables, single dedicated admin login —
+   owned by that repo, not this one).
+2. The backend serves it at `GET /api/academy/content` per the contract above.
+3. This app's `ContentContext` fetches, caches, and renders it — no app-store release
+   needed for content changes.
+4. `seedContent.ts` only matters for first launch with no connectivity; update it if you
+   want the offline-fallback experience to look better, but it is not the source of truth.
+
+Notes that still apply regardless of source:
+- **Featured lesson on Home:** `Home.tsx` has `FEATURED_ID = 'release-timeline'`. Update
+  it if that lesson is renamed/removed on the backend.
+- **Icons:** category `icon` must be a lucide icon **name** registered in the explicit
+  map in `src/components/Icon.tsx` — this applies to icon names coming from the API too.
+  Unknown names fall back to `Circle`. `Icon.tsx` is intentionally not a barrel import
+  (`import * as Lucide` pulled ~700 kB of unused icons into the bundle).
 
 ### Theme
 
@@ -218,16 +258,21 @@ capacitor.config.ts        — native app id, name, dark background, build instr
 index.html                 — mobile viewport, theme-color, apple-mobile-web-app meta
 vite.config.ts             — react + tailwind plugins, @/* → ./src alias
 tsconfig.app.json          — has the @/* path mapping (bundler resolution, no baseUrl)
+.env.example                — VITE_API_BASE_URL for local/prod backend (copy to .env.local)
 src/
   main.tsx                 — React root, imports index.css
   index.css                — Tailwind import + @theme tokens + safe-area helpers
-  App.tsx                  — providers (Saved, Nav) + Shell (tab/detail switch + BottomNav)
-  data/content.ts          — ALL content + the Lesson/Category/GlossaryTerm types
+  vite-env.d.ts            — VITE_API_BASE_URL ImportMetaEnv typing
+  App.tsx                  — providers (Content, Saved, Nav) + Shell (tab/detail switch + BottomNav)
+  data/
+    content.ts             — Block/Lesson/Category/GlossaryTerm/ChecklistSection/ChecklistItem types only
+    seedContent.ts          — bundled placeholder content, offline-first-launch fallback only
   context/
+    ContentContext.tsx      — fetches/caches Academy content API, falls back to seedContent
     NavContext.tsx         — tab + detail navigation store
     SavedContext.tsx       — bookmarked lesson IDs, localStorage-persisted
   components/
-    BottomNav.tsx          — fixed 5-tab bar, gold active state
+    BottomNav.tsx          — floating liquid-glass 5-tab bar (frosted, blurred, morphing active pill)
     LessonCard.tsx         — tappable card with inline bookmark toggle
     Blocks.tsx             — renders a Lesson.body (Block[])
     Icon.tsx               — explicit lucide icon registry (tree-shaken)
@@ -236,7 +281,7 @@ src/
     Learn.tsx              — list of all categories with lesson counts
     Tools.tsx              — hub; internal state switches to Glossary / ReleaseChecklist
     tools/Glossary.tsx     — searchable A–Z accordion over `glossary`
-    tools/ReleaseChecklist.tsx — 8-week checklist, progress in localStorage
+    tools/ReleaseChecklist.tsx — checklist from `useContent()`, progress in localStorage keyed by item id
     Search.tsx             — searches lessons + glossary, sectioned results
     Saved.tsx              — bookmarked lessons, empty state → Learn
     LessonDetail.tsx       — lesson reader (back + bookmark in header)
@@ -245,8 +290,9 @@ public/
   favicon.svg              — gold trident mark on dark
 ```
 
-localStorage keys in use: `poseidon.saved.v1` (bookmarks),
-`poseidon.checklist.release.v1` (checklist progress).
+localStorage keys in use: `poseidon.content.v1` (cached Academy content + `updatedAt`),
+`poseidon.saved.v1` (bookmarks), `poseidon.checklist.release.v1` (checklist progress,
+keyed by `ChecklistItem.id`).
 
 ---
 
@@ -256,9 +302,10 @@ localStorage keys in use: `poseidon.saved.v1` (bookmarks),
 - **Icons are an explicit registry**, never `import * as Lucide` (bundle size).
 - **`@/` is the alias for `src/`** — import as `@/components/...`, `@/data/content`, etc.
 - **Content is structured, never raw HTML** — extend the `Block` union if you need a new
-  layout, and handle it in `Blocks.tsx`.
-- **No backend / network** — keep it that way for V1. If content needs to update without an
-  app-store release later, that's a deliberate future decision (see Next steps).
+  layout, and handle it in `Blocks.tsx` (and the backend response must match).
+- **Content is fetched + cached, not bundled** — `useContent()` from `ContentContext`,
+  never import data arrays from `content.ts` (it has only types) or `seedContent.ts`
+  directly in screens.
 - **Commit only when the user explicitly says to commit** (standing rule from the website
   project — applies here too).
 - Build locally (`npm run build`) before any push to catch TypeScript errors early.
@@ -280,41 +327,61 @@ localStorage keys in use: `poseidon.saved.v1` (bookmarks),
 - [x] Tools hub → Glossary (search + A–Z accordion) + Release Checklist (checkable, persisted)
 - [x] Global Search across lessons + glossary
 - [x] Saved/bookmarks with localStorage persistence + empty state
-- [x] Placeholder content: 6 categories, 12 lessons, 22 glossary terms
+- [x] Placeholder content moved to `seedContent.ts`: 6 categories, 12 lessons, 22 glossary
+  terms, 5-section checklist — offline-first-launch fallback only
 - [x] Capacitor config for iOS/Android
 - [x] Bundle size fix (explicit icon registry)
 - [x] README + this CLAUDE.md
 - [x] git init + initial commit (own repo)
+- [x] `ContentContext` — fetches Academy content API, caches to `localStorage`, falls
+  back to `seedContent.ts` offline; all screens + Release Checklist consume `useContent()`
+- [x] `.env.example` + `vite-env.d.ts` for `VITE_API_BASE_URL`
 
 ## Next Steps / Open Items
 
 1. **Push to GitHub** — repo isn't remote yet. Create it on GitHub, then from
    `poseidon-mobile-app/`: `git remote add origin <url> && git push -u origin main`.
    Then **Yashmit invites Johnytiger** as a collaborator (Claude can't do this).
-2. **Real content** — the team gathers curated lessons/glossary; swap into `content.ts`
-   per "How to add / replace content" above. The placeholder content should not ship as-is.
-3. **App name** — "Poseidon Academy" is a working name; confirm before store submission.
+2. **Connect to live backend** — once the poseidon-music-platform Academy API
+   (`/api/academy/content`, separate `academy_*` tables, single admin login) is live,
+   set `VITE_API_BASE_URL` in `.env.local` (see `.env.example`) and verify `npm run dev`
+   fetches/caches live content, with offline mode falling back to cache then seed.
+3. **Real content** — the team/admin enters curated lessons/glossary/checklist via the
+   Academy admin page on poseidon-music-platform. `seedContent.ts` placeholder content
+   should not ship as the primary experience.
+4. **App name** — "Poseidon Academy" is a working name; confirm before store submission.
    It lives in `capacitor.config.ts`, `index.html` `<title>`, `README.md`, and Home/Login copy.
-4. **Native projects** — run `cap add ios` / `cap add android` when ready to test on device
+5. **Native projects** — run `cap add ios` / `cap add android` when ready to test on device
    or submit. Needs Xcode / Android Studio. App icons + splash screens still to be designed.
-5. **Tests** — no test setup yet. The website uses Playwright; consider Vitest +
+6. **Tests** — no test setup yet. The website uses Playwright; consider Vitest +
    React Testing Library here, or Playwright against `npm run dev`.
-6. **PWA option** — if they also want browser-installable, add a web manifest + service
+7. **PWA option** — if they also want browser-installable, add a web manifest + service
    worker. Not required for the Capacitor/native path.
-7. **Content updates without a store release** — currently content is bundled, so updating
-   it means shipping an app update. If that becomes painful, options are a hosted JSON the
-   app fetches and caches, or Capacitor Live Updates. Deliberately deferred for V1.
 
 ---
 
 ## Relationship to the Website (poseidon-music-platform)
 
-- **Separate repo, separate everything.** Do not import from or couple to the website.
+- **Separate repo, separate code, shared backend for Academy content only.** This app
+  does not import from or build the website's frontend/backend. It calls one endpoint
+  on the poseidon-music-platform Express/Railway backend.
 - The website's Resources hub (ResourcesPage, WizardEngine, GlossaryPage, ReleaseTimeline,
-  65-term glossary, 5 wizards) was the **inspiration** for this app's content shape. Some
-  topics overlap intentionally. The website keeps its Resources section unchanged.
-- If you want to port website content (e.g. the 65 glossary terms or wizard flows) into this
-  app, translate them into this repo's `content.ts` shapes — don't share code.
+  65-term glossary, 5 wizards) was the **inspiration** for this app's content shape, and
+  some topics overlap intentionally — but Academy content lives in its **own** `academy_*`
+  tables on the backend, separate from the website's Resource Hub content. The website
+  keeps its Resources section unchanged.
+- **Academy content API contract** (owned/implemented by the website-side session):
+  `GET {VITE_API_BASE_URL}/api/academy/content` — public, no auth, permissive CORS —
+  returns `{ categories, lessons, glossary, checklist, updatedAt }` matching the
+  `Category`/`Lesson`/`GlossaryTerm`/`ChecklistSection` shapes in `src/data/content.ts`.
+  `updatedAt` is the newest `updated_at` across the backend's Academy tables, used by
+  `ContentContext` to skip re-caching when content hasn't changed.
+- **Admin**: a single dedicated Academy admin login (env-var-based, `AcademyAdminPage.tsx`)
+  lives on the website repo and manages Academy content — this app has no admin UI of
+  its own.
+- **Hosting**: both the website and the Academy backend run on Railway (per Jon Rosell).
+  This app itself (a static Vite build, optionally Capacitor-wrapped) doesn't need its
+  own Railway service unless shipped as a PWA.
 
 ---
 

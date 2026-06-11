@@ -1,66 +1,23 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Check, RotateCcw } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { useContent } from '@/context/ContentContext'
 import { screenStagger, fadeUp } from '@/lib/animations'
 
 const STORAGE_KEY = 'poseidon.checklist.release.v1'
 
-const SECTIONS: { title: string; items: string[] }[] = [
-  {
-    title: '8 weeks out',
-    items: [
-      'Final master approved and exported',
-      'Cover artwork finalized (3000×3000, no logos)',
-      'Metadata locked: title, features, credits, genre',
-    ],
-  },
-  {
-    title: '6 weeks out',
-    items: [
-      'Uploaded to distributor',
-      'Release date set',
-      'Splits agreed and documented with collaborators',
-    ],
-  },
-  {
-    title: '4 weeks out',
-    items: [
-      'Submitted to Spotify editorial via Spotify for Artists',
-      'Registered the song with your PRO',
-      'Started teasing on socials',
-    ],
-  },
-  {
-    title: '2 weeks out',
-    items: [
-      'Pre-save campaign live',
-      'Curators and press pitched',
-      'Content scheduled for release week',
-    ],
-  },
-  {
-    title: 'Release week',
-    items: [
-      'Final reminders posted',
-      'Thanked early supporters and pre-savers',
-      'Watching first-day data on Spotify for Artists',
-    ],
-  },
-]
-
-const ALL = SECTIONS.flatMap((s) => s.items)
-
-function load(): Record<string, boolean> {
+function load(): Record<number, boolean> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {}
+    return raw ? (JSON.parse(raw) as Record<number, boolean>) : {}
   } catch {
     return {}
   }
 }
 
 export function ReleaseChecklist({ onBack }: { onBack: () => void }) {
-  const [checked, setChecked] = useState<Record<string, boolean>>(load)
+  const { checklist } = useContent()
+  const [checked, setChecked] = useState<Record<number, boolean>>(load)
 
   useEffect(() => {
     try {
@@ -70,8 +27,9 @@ export function ReleaseChecklist({ onBack }: { onBack: () => void }) {
     }
   }, [checked])
 
-  const done = ALL.filter((i) => checked[i]).length
-  const pct = done / ALL.length
+  const all = checklist.flatMap((s) => s.items)
+  const done = all.filter((i) => checked[i.id]).length
+  const pct = all.length === 0 ? 0 : done / all.length
 
   return (
     <div className="min-h-full bg-bg">
@@ -107,7 +65,7 @@ export function ReleaseChecklist({ onBack }: { onBack: () => void }) {
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted">Progress</span>
             <span className="text-sm font-semibold text-gold">
-              {done}/{ALL.length}
+              {done}/{all.length}
             </span>
           </div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-2">
@@ -122,20 +80,20 @@ export function ReleaseChecklist({ onBack }: { onBack: () => void }) {
         </motion.div>
 
         {/* Checklist sections stagger in */}
-        {SECTIONS.map((section) => (
-          <motion.section key={section.title} variants={fadeUp} className="mt-6">
+        {checklist.map((section) => (
+          <motion.section key={section.id} variants={fadeUp} className="mt-6">
             <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-muted">
               {section.title}
             </h2>
             <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-surface">
               {section.items.map((item) => {
-                const on = !!checked[item]
+                const on = !!checked[item.id]
                 return (
                   <motion.button
-                    key={item}
+                    key={item.id}
                     whileTap={{ scale: 0.98 }}
                     onClick={() =>
-                      setChecked((prev) => ({ ...prev, [item]: !prev[item] }))
+                      setChecked((prev) => ({ ...prev, [item.id]: !prev[item.id] }))
                     }
                     className="flex w-full items-center gap-3 px-4 py-3.5 text-left active:bg-surface-2"
                   >
@@ -168,7 +126,7 @@ export function ReleaseChecklist({ onBack }: { onBack: () => void }) {
                         on ? 'text-muted line-through' : 'text-text'
                       }`}
                     >
-                      {item}
+                      {item.text}
                     </span>
                   </motion.button>
                 )

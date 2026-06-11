@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
+import { ContentProvider } from '@/context/ContentContext'
 import { NavProvider, useNav } from '@/context/NavContext'
 import { SavedProvider } from '@/context/SavedContext'
 import { BottomNav } from '@/components/BottomNav'
@@ -49,10 +50,12 @@ function Shell() {
 
 export default function App() {
   return (
-    <SavedProvider>
-      <NavProvider>
-        <Shell />
-      </NavProvider>
-    </SavedProvider>
+    <ContentProvider>
+      <SavedProvider>
+        <NavProvider>
+          <Shell />
+        </NavProvider>
+      </SavedProvider>
+    </ContentProvider>
   )
 }
