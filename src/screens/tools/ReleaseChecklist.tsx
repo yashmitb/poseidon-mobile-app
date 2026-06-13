@@ -33,22 +33,28 @@ export function ReleaseChecklist({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="min-h-full bg-bg">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-bg/95 px-3 py-3 backdrop-blur pt-safe">
-        <motion.button
-          onClick={onBack}
-          whileTap={{ scale: 0.88 }}
-          className="p-1 text-muted active:text-text"
-        >
-          <ArrowLeft size={20} />
-        </motion.button>
-        <h1 className="font-semibold text-text">Release Checklist</h1>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => setChecked({})}
-          className="ml-auto flex items-center gap-1 text-xs text-muted active:text-text"
-        >
-          <RotateCcw size={14} /> Reset
-        </motion.button>
+      <header className="sticky top-0 z-20 pt-safe">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-[calc(100%+1.75rem)] bg-gradient-to-b from-bg via-bg/85 to-transparent"
+        />
+        <div className="glass relative mx-3 my-2 flex items-center gap-2 rounded-full border border-white/10 px-2.5 py-2 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.6)]">
+          <motion.button
+            onClick={onBack}
+            whileTap={{ scale: 0.86 }}
+            className="rounded-full p-1.5 text-muted active:bg-white/10 active:text-text"
+          >
+            <ArrowLeft size={20} />
+          </motion.button>
+          <h1 className="font-semibold text-text">Release Checklist</h1>
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setChecked({})}
+            className="ml-auto flex items-center gap-1 rounded-full px-2 py-1 text-xs text-muted active:bg-white/10 active:text-text"
+          >
+            <RotateCcw size={14} /> Reset
+          </motion.button>
+        </div>
       </header>
 
       <motion.div

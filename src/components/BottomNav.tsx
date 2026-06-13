@@ -14,7 +14,8 @@ const TABS: { id: TabId; label: string; icon: React.ComponentType<LucideProps> }
 
 export function BottomNav() {
   const { tab, setTab } = useNav()
-  const listRef = useRef<HTMLUListElement>(null)
+  const barRef = useRef<HTMLDivElement>(null)
+  const rowRef = useRef<HTMLDivElement>(null)
   const [dragging, setDragging] = useState(false)
 
   const activeIndex = Math.max(0, TABS.findIndex((t) => t.id === tab))
@@ -32,8 +33,10 @@ export function BottomNav() {
   const scaleX = useTransform(velocity, (v) => 1 + Math.min(Math.abs(v) * 0.18, 0.42))
   const scaleY = useTransform(velocity, (v) => 1 - Math.min(Math.abs(v) * 0.06, 0.14))
 
+  // Map a pointer x to a tab using the inner row geometry (the row is inset
+  // from the bar edges, so measuring the bar would skew the edge tabs).
   function tabFromClientX(clientX: number): TabId | null {
-    const el = listRef.current
+    const el = rowRef.current
     if (!el) return null
     const rect = el.getBoundingClientRect()
     const rel = (clientX - rect.left) / rect.width
@@ -41,20 +44,20 @@ export function BottomNav() {
     return TABS[i].id
   }
 
-  function handlePointerDown(e: React.PointerEvent<HTMLUListElement>) {
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     setDragging(true)
     e.currentTarget.setPointerCapture(e.pointerId)
     const id = tabFromClientX(e.clientX)
     if (id) setTab(id)
   }
 
-  function handlePointerMove(e: React.PointerEvent<HTMLUListElement>) {
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
     if (!dragging) return
     const id = tabFromClientX(e.clientX)
     if (id && id !== tab) setTab(id)
   }
 
-  function endDrag(e: React.PointerEvent<HTMLUListElement>) {
+  function endDrag(e: React.PointerEvent<HTMLDivElement>) {
     setDragging(false)
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId)
@@ -64,41 +67,46 @@ export function BottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 pb-safe">
       <div className="mx-auto max-w-md px-6 pb-5">
-        {/* Liquid glass: floating, frosted, translucent pill. Drag across it to
-            scrub between tabs. */}
-        <ul
-          ref={listRef}
+        {/* Liquid glass bar: floating, frosted, translucent. Drag across it to
+            scrub between tabs. Horizontal padding gives the edge tabs' wide
+            highlight room so it doesn't get clipped at the rounded ends. */}
+        <div
+          ref={barRef}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
-          className="relative flex touch-none select-none items-stretch overflow-hidden rounded-full border border-white/10 bg-surface/20 shadow-[0_8px_30px_-6px_rgba(0,0,0,0.6)] backdrop-blur-2xl backdrop-saturate-150"
+          className="relative touch-none select-none overflow-hidden rounded-full border border-white/10 bg-surface/20 px-3 shadow-[0_8px_30px_-6px_rgba(0,0,0,0.6)] backdrop-blur-2xl backdrop-saturate-150"
         >
-          {/* Travelling liquid highlight — one tab wide, slides via `x`,
-              stretches via velocity-driven scaleX/scaleY. */}
-          <motion.span
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 left-0 z-0"
-            style={{ width: `${100 / TABS.length}%`, x }}
-          >
-            <motion.span
-              style={{ scaleX, scaleY }}
-              className="absolute inset-x-1.5 inset-y-1.5 origin-center rounded-full border border-white/10 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
-            />
-          </motion.span>
-
           {/* Top specular highlight */}
           <div className="pointer-events-none absolute inset-x-6 top-0 z-10 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
-          {TABS.map(({ id, label, icon: IconCmp }) => {
-            const active = tab === id
-            return (
-              <li key={id} className="relative z-10 flex-1">
+          {/* Inner tab row — no padding, so the absolute highlight and the flex
+              tabs share the same geometry. Inset from the bar edges by the
+              bar's px-3. */}
+          <div ref={rowRef} className="relative flex items-stretch">
+            {/* Travelling liquid highlight — one tab wide, slides via `x`,
+                stretches via velocity-driven scaleX/scaleY. */}
+            <motion.span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 left-0 z-0"
+              style={{ width: `${100 / TABS.length}%`, x }}
+            >
+              <motion.span
+                style={{ scaleX, scaleY }}
+                className="absolute -inset-x-2 inset-y-1 origin-center rounded-full border border-white/10 bg-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.15)]"
+              />
+            </motion.span>
+
+            {TABS.map(({ id, label, icon: IconCmp }) => {
+              const active = tab === id
+              return (
                 <button
+                  key={id}
                   onClick={() => setTab(id)}
                   aria-current={active ? 'page' : undefined}
                   aria-label={label}
-                  className="flex w-full items-center justify-center py-5"
+                  className="relative z-10 flex flex-1 items-center justify-center py-5"
                 >
                   <motion.span
                     animate={{ scale: active ? 1.12 : 1, y: active ? -1 : 0 }}
@@ -111,10 +119,10 @@ export function BottomNav() {
                     />
                   </motion.span>
                 </button>
-              </li>
-            )
-          })}
-        </ul>
+              )
+            })}
+          </div>
+        </div>
       </div>
     </nav>
   )

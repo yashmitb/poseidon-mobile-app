@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import type { Lesson } from '@/data/content'
 import { useNav } from '@/context/NavContext'
 import { useSaved } from '@/context/SavedContext'
+import { springs } from '@/lib/animations'
 
 export function LessonCard({ lesson }: { lesson: Lesson }) {
   const { openLesson } = useNav()
@@ -11,7 +12,8 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
 
   return (
     <motion.button
-      whileTap={{ scale: 0.97 }}
+      whileTap={{ scale: 0.96 }}
+      transition={springs.bouncy}
       onClick={() => openLesson(lesson.id)}
       className="w-full text-left rounded-2xl border border-border bg-surface p-4 active:bg-surface-2"
     >

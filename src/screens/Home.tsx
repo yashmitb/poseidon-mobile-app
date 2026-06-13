@@ -4,7 +4,7 @@ import { Icon } from '@/components/Icon'
 import { LessonCard } from '@/components/LessonCard'
 import { useContent } from '@/context/ContentContext'
 import { useNav } from '@/context/NavContext'
-import { screenStagger, sectionStagger, fadeUp } from '@/lib/animations'
+import { screenStagger, sectionStagger, fadeUp, springs } from '@/lib/animations'
 
 const FEATURED_ID = 'release-timeline'
 
@@ -31,6 +31,7 @@ export function Home() {
       <motion.button
         variants={fadeUp}
         whileTap={{ scale: 0.97 }}
+        transition={springs.bouncy}
         onClick={() => openLesson(featured.id)}
         className="mt-5 w-full overflow-hidden rounded-2xl border border-gold/30 bg-gradient-to-br from-gold-dim to-surface p-5 text-left"
       >
@@ -60,7 +61,8 @@ export function Home() {
             <motion.button
               key={c.id}
               variants={fadeUp}
-              whileTap={{ scale: 0.95 }}
+              whileTap={{ scale: 0.94 }}
+              transition={springs.bouncy}
               onClick={() => openCategory(c.id)}
               className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 text-left active:bg-surface-2"
             >

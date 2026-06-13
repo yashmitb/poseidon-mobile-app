@@ -24,50 +24,52 @@ export function LessonDetail({ id }: { id: string }) {
   const saved = isSaved(lesson.id)
 
   return (
-    // Slides in from the right; exits to the right when back() is called.
-    // The spring stiffness/damping mirror iOS push navigation feel.
+    // iOS-style push: a fully opaque panel slides in from the right over the
+    // outgoing screen (no opacity fade — that caused a black flash in the
+    // header). The cubic-bezier mirrors the iOS navigation ease.
     <motion.div
-      initial={{ opacity: 0, x: 48 }}
-      animate={{
-        opacity: 1,
-        x: 0,
-        transition: { type: 'spring', stiffness: 380, damping: 32 },
-      }}
-      exit={{
-        opacity: 0,
-        x: 32,
-        transition: { duration: 0.15, ease: 'easeIn' },
-      }}
+      initial={{ x: '100%' }}
+      animate={{ x: 0, transition: { duration: 0.34, ease: [0.32, 0.72, 0, 1] } }}
+      exit={{ x: '100%', transition: { duration: 0.26, ease: [0.32, 0.72, 0, 1] } }}
       className="min-h-dvh bg-bg"
     >
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-bg/95 px-3 py-3 backdrop-blur pt-safe">
-        <motion.button
-          onClick={back}
-          whileTap={{ scale: 0.88 }}
-          className="flex items-center gap-1 text-sm text-muted active:text-text"
-        >
-          <ArrowLeft size={20} />
-        </motion.button>
+      <header className="sticky top-0 z-20 pt-safe">
+        {/* Soft scrim: content fades out under the floating bar instead of
+            hitting a hard edge. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-[calc(100%+1.75rem)] bg-gradient-to-b from-bg via-bg/85 to-transparent"
+        />
+        {/* Floating liquid-glass bar — matches the bottom nav material. */}
+        <div className="glass relative mx-3 my-2 flex items-center justify-between rounded-full border border-white/10 px-2.5 py-2 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.6)]">
+          <motion.button
+            onClick={back}
+            whileTap={{ scale: 0.86 }}
+            className="rounded-full p-1.5 text-muted active:bg-white/10 active:text-text"
+          >
+            <ArrowLeft size={20} />
+          </motion.button>
 
-        {/* Bookmark in the detail header also gets the spring pop */}
-        <motion.button
-          onClick={() => toggle(lesson.id)}
-          whileTap={{ scale: 0.75 }}
-          aria-label={saved ? 'Remove bookmark' : 'Save lesson'}
-          className="p-1"
-        >
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={saved ? 'saved' : 'unsaved'}
-              initial={{ scale: 0.4, rotate: -20, opacity: 0 }}
-              animate={{ scale: 1, rotate: 0, opacity: 1 }}
-              exit={{ scale: 0.4, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 560, damping: 22 }}
-            >
-              <Bookmark size={20} className={saved ? 'fill-gold text-gold' : 'text-muted'} />
-            </motion.div>
-          </AnimatePresence>
-        </motion.button>
+          {/* Bookmark in the detail header also gets the spring pop */}
+          <motion.button
+            onClick={() => toggle(lesson.id)}
+            whileTap={{ scale: 0.75 }}
+            aria-label={saved ? 'Remove bookmark' : 'Save lesson'}
+            className="rounded-full p-1.5 active:bg-white/10"
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={saved ? 'saved' : 'unsaved'}
+                initial={{ scale: 0.4, rotate: -20, opacity: 0 }}
+                animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                exit={{ scale: 0.4, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 560, damping: 22 }}
+              >
+                <Bookmark size={20} className={saved ? 'fill-gold text-gold' : 'text-muted'} />
+              </motion.div>
+            </AnimatePresence>
+          </motion.button>
+        </div>
       </header>
 
       <article className="px-5 pb-28 pt-4">

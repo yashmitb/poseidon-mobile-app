@@ -16,10 +16,11 @@ function Shell() {
 
   return (
     <div className="mx-auto max-w-md bg-bg text-text">
-      {/* overflow-x-hidden only on content — applying it to the outer shell breaks
-          position:fixed on iOS Safari (fixed becomes relative to the overflow container) */}
-      <div className="overflow-x-hidden">
-        <AnimatePresence mode="wait">
+      {/* overflow-x:clip (not hidden) contains the horizontal slide-in animations
+          without creating a scroll container — `hidden` forces overflow-y:auto,
+          which breaks position:sticky headers and position:fixed on iOS Safari. */}
+      <div className="relative overflow-x-clip">
+        <AnimatePresence mode="popLayout">
           {detail ? (
             detail.kind === 'lesson' ? (
               <LessonDetail key={`lesson-${detail.id}`} id={detail.id} />
@@ -29,9 +30,14 @@ function Shell() {
           ) : (
             <motion.main
               key={tab}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, transition: { duration: 0.14, ease: 'easeOut' } }}
-              exit={{ opacity: 0, transition: { duration: 0.1, ease: 'easeIn' } }}
+              initial={{ opacity: 0, y: 10, scale: 0.985 }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                transition: { type: 'spring', stiffness: 320, damping: 30 },
+              }}
+              exit={{ opacity: 0, y: -8, scale: 0.99, transition: { duration: 0.12, ease: 'easeIn' } }}
             >
               {tab === 'home' && <Home />}
               {tab === 'learn' && <Learn />}
