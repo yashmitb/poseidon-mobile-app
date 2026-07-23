@@ -4,7 +4,7 @@
 // with no connectivity). Once a fetch succeeds, ContentContext caches the
 // live content and this module is no longer read.
 
-import type { Category, ChecklistSection, GlossaryTerm, Lesson } from './content'
+import type { Category, ChecklistSection, GlossaryTerm, Lesson, QAItem } from './content'
 
 export const categories: Category[] = [
   {
@@ -548,5 +548,47 @@ export const checklist: ChecklistSection[] = [
       { id: 14, text: 'Thanked early supporters and pre-savers' },
       { id: 15, text: 'Watching first-day data on Spotify for Artists' },
     ],
+  },
+]
+
+// Per-category Q&A. Each entry is tied to a category by its id (slug) and
+// shown at the bottom of that category's screen. Placeholder content only —
+// real Q&A is managed via the Academy admin.
+export const qa: QAItem[] = [
+  {
+    id: 1,
+    categoryId: 'music-distribution',
+    question: 'How long before release should I upload to my distributor?',
+    answer: 'Aim for at least 3-4 weeks. That leaves time to submit your Spotify editorial pitch (which wants 7+ days lead) and to fix any metadata or artwork rejections before the date locks.',
+  },
+  {
+    id: 2,
+    categoryId: 'music-distribution',
+    question: 'Do distributors take my rights?',
+    answer: 'A reputable distributor delivers your music and collects royalties for a fee or a cut — it does not own your masters. If a service asks for ownership of your recordings, walk away.',
+  },
+  {
+    id: 3,
+    categoryId: 'royalties-pros',
+    question: 'Can I join more than one PRO?',
+    answer: 'No — register as a writer with a single PRO (ASCAP, BMI, or SESAC/GMR). Splitting your catalog across two makes collection messy and can leave royalties uncollected.',
+  },
+  {
+    id: 4,
+    categoryId: 'royalties-pros',
+    question: 'What is the difference between a PRO and a publisher?',
+    answer: 'A PRO collects performance royalties for the songwriter. A publisher administers the composition more broadly — pitching for sync, registering works globally, and collecting mechanicals. You can start with just a PRO.',
+  },
+  {
+    id: 5,
+    categoryId: 'copyright-publishing',
+    question: 'Do I need to register my copyright to own it?',
+    answer: 'You own the copyright the moment the work is fixed in a tangible form. Registration is not required for ownership, but it gives you stronger legal standing and the right to statutory damages.',
+  },
+  {
+    id: 6,
+    categoryId: 'spotify-for-artists',
+    question: 'How many editorial pitches do I get per release?',
+    answer: 'One pitch per unreleased track, through Spotify for Artists. Submit it the moment the release is uploaded — earlier pitches signal confidence and give editors more time.',
   },
 ]

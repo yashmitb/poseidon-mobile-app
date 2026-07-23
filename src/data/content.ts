@@ -44,3 +44,10 @@ export interface ChecklistSection {
   title: string
   items: ChecklistItem[]
 }
+
+export interface QAItem {
+  id: number
+  categoryId: string // matches Category.id
+  question: string
+  answer: string
+}

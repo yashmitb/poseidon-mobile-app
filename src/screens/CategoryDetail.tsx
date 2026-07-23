@@ -1,16 +1,67 @@
-import { ArrowLeft } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { useState } from 'react'
+import { ArrowLeft, ChevronDown, HelpCircle } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Icon } from '@/components/Icon'
 import { LessonCard } from '@/components/LessonCard'
 import { useContent } from '@/context/ContentContext'
 import { useNav } from '@/context/NavContext'
 import { screenStagger, fadeUp } from '@/lib/animations'
+import type { QAItem } from '@/data/content'
+
+function QASection({ items }: { items: QAItem[] }) {
+  const [openId, setOpenId] = useState<number | null>(null)
+  return (
+    <motion.div variants={fadeUp} className="pt-4">
+      <div className="mb-3 flex items-center gap-2">
+        <HelpCircle size={16} className="text-gold" />
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+          Questions & Answers
+        </h2>
+      </div>
+      <div className="space-y-2">
+        {items.map((qaItem) => {
+          const open = openId === qaItem.id
+          return (
+            <div
+              key={qaItem.id}
+              className="overflow-hidden rounded-2xl border border-border bg-surface"
+            >
+              <button
+                onClick={() => setOpenId(open ? null : qaItem.id)}
+                className="flex w-full items-center gap-3 px-4 py-3 text-left active:bg-surface-2"
+              >
+                <span className="flex-1 text-sm font-medium text-text">{qaItem.question}</span>
+                <ChevronDown
+                  size={18}
+                  className={`shrink-0 text-muted transition-transform ${open ? 'rotate-180' : ''}`}
+                />
+              </button>
+              <AnimatePresence initial={false}>
+                {open && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                  >
+                    <p className="px-4 pb-4 text-sm leading-relaxed text-muted">{qaItem.answer}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )
+        })}
+      </div>
+    </motion.div>
+  )
+}
 
 export function CategoryDetail({ id }: { id: string }) {
   const { back } = useNav()
-  const { categories, lessons } = useContent()
+  const { categories, lessons, qa } = useContent()
   const category = categories.find((c) => c.id === id)
   const items = lessons.filter((l) => l.categoryId === id)
+  const qaItems = qa.filter((q) => q.categoryId === id)
 
   return (
     // iOS-style push: a fully opaque panel slides in from the right over the
@@ -64,6 +115,7 @@ export function CategoryDetail({ id }: { id: string }) {
             <LessonCard lesson={l} />
           </motion.div>
         ))}
+        {qaItems.length > 0 && <QASection items={qaItems} />}
       </motion.div>
     </motion.div>
   )
