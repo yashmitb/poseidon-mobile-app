@@ -190,12 +190,20 @@ interface ChecklistSection {
   title: string
   items: ChecklistItem[]
 }
+
+interface QAItem {
+  id: number                 // stable id (backend row id)
+  categoryId: string         // must match a Category.id — ties the Q&A to a category
+  question: string
+  answer: string
+}
 ```
 
 ### Content loading (`src/context/ContentContext.tsx`)
 
 `ContentProvider` (wraps the app in `App.tsx`, outermost provider) is the single source
-of `categories`, `lessons`, `glossary`, and `checklist` at runtime:
+of `categories`, `lessons`, `glossary`, `checklist`, and `qa` (per-category Q&A) at
+runtime:
 
 1. On mount, synchronously reads `localStorage['poseidon.content.v1']`. If present, uses
    it as initial state; otherwise falls back to `src/data/seedContent.ts`.
@@ -203,11 +211,13 @@ of `categories`, `lessons`, `glossary`, and `checklist` at runtime:
    If the response's `updatedAt` differs from the cached value, updates state and
    localStorage. On any failure (offline, unreachable, no env var set), silently keeps
    the current cached/seed content.
-3. `useContent()` returns `{ categories, lessons, glossary, checklist, loading }`.
+3. `useContent()` returns `{ categories, lessons, glossary, checklist, qa, loading }`.
+   `qa` defaults to `[]` when read from an older cache or a backend that predates the
+   Q&A feature (see `normalize()` in `ContentContext`).
 
-`src/data/seedContent.ts` holds the bundled placeholder `categories` (6), `lessons` (12),
-`glossary` (22), and a 5-section `checklist` — used **only** as a last-resort fallback
-before any cache exists. Real content is managed via the Academy admin on the
+`src/data/seedContent.ts` holds the bundled placeholder `categories` (26), `lessons` (12),
+`glossary` (22), a 5-section `checklist`, and a few `qa` entries — used **only** as a
+last-resort fallback before any cache exists. Real content is managed via the Academy admin on the
 poseidon-music-platform backend (see "Relationship to the Website").
 
 ### How content reaches the app
@@ -265,7 +275,7 @@ src/
   vite-env.d.ts            — VITE_API_BASE_URL ImportMetaEnv typing
   App.tsx                  — providers (Content, Saved, Nav) + Shell (tab/detail switch + BottomNav)
   data/
-    content.ts             — Block/Lesson/Category/GlossaryTerm/ChecklistSection/ChecklistItem types only
+    content.ts             — Block/Lesson/Category/GlossaryTerm/ChecklistSection/ChecklistItem/QAItem types only
     seedContent.ts          — bundled placeholder content, offline-first-launch fallback only
   context/
     ContentContext.tsx      — fetches/caches Academy content API, falls back to seedContent
@@ -285,7 +295,7 @@ src/
     Search.tsx             — searches lessons + glossary, sectioned results
     Saved.tsx              — bookmarked lessons, empty state → Learn
     LessonDetail.tsx       — lesson reader (back + bookmark in header)
-    CategoryDetail.tsx     — lessons within one category
+    CategoryDetail.tsx     — lessons within one category + a per-category Q&A accordion
 public/
   favicon.svg              — gold trident mark on dark
 ```
@@ -327,8 +337,11 @@ keyed by `ChecklistItem.id`).
 - [x] Tools hub → Glossary (search + A–Z accordion) + Release Checklist (checkable, persisted)
 - [x] Global Search across lessons + glossary
 - [x] Saved/bookmarks with localStorage persistence + empty state
-- [x] Placeholder content moved to `seedContent.ts`: 6 categories, 12 lessons, 22 glossary
-  terms, 5-section checklist — offline-first-launch fallback only
+- [x] Placeholder content in `seedContent.ts`: 26 categories, 12 lessons, 22 glossary
+  terms, 5-section checklist, per-category Q&A — offline-first-launch fallback only
+- [x] Per-category Q&A: `QAItem` type, `qa` in `ContentContext` (cached, back-compat
+  defaulted), Q&A accordion on `CategoryDetail`; backend `academy_qa` table + public API
+  `qa` field + admin Q&A tab (CRUD + bulk import) on poseidon-music-platform
 - [x] Capacitor config for iOS/Android
 - [x] Bundle size fix (explicit icon registry)
 - [x] README + this CLAUDE.md
@@ -372,10 +385,11 @@ keyed by `ChecklistItem.id`).
   keeps its Resources section unchanged.
 - **Academy content API contract** (owned/implemented by the website-side session):
   `GET {VITE_API_BASE_URL}/api/academy/content` — public, no auth, permissive CORS —
-  returns `{ categories, lessons, glossary, checklist, updatedAt }` matching the
-  `Category`/`Lesson`/`GlossaryTerm`/`ChecklistSection` shapes in `src/data/content.ts`.
-  `updatedAt` is the newest `updated_at` across the backend's Academy tables, used by
-  `ContentContext` to skip re-caching when content hasn't changed.
+  returns `{ categories, lessons, glossary, checklist, qa, updatedAt }` matching the
+  `Category`/`Lesson`/`GlossaryTerm`/`ChecklistSection`/`QAItem` shapes in
+  `src/data/content.ts`. `qa` is per-category Q&A (each entry has a `categoryId`).
+  `updatedAt` is the newest `updated_at` across the backend's Academy tables (including
+  `academy_qa`), used by `ContentContext` to skip re-caching when content hasn't changed.
 - **Admin**: a single dedicated Academy admin login (env-var-based, `AcademyAdminPage.tsx`)
   lives on the website repo and manages Academy content — this app has no admin UI of
   its own.
