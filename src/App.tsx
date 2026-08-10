@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
+import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { ContentProvider } from '@/context/ContentContext'
 import { NavProvider, useNav } from '@/context/NavContext'
 import { SavedProvider } from '@/context/SavedContext'
@@ -8,6 +9,7 @@ import { Learn } from '@/screens/Learn'
 import { Tools } from '@/screens/Tools'
 import { Search } from '@/screens/Search'
 import { Saved } from '@/screens/Saved'
+import { Login } from '@/screens/Login'
 import { LessonDetail } from '@/screens/LessonDetail'
 import { CategoryDetail } from '@/screens/CategoryDetail'
 
@@ -54,7 +56,11 @@ function Shell() {
   )
 }
 
-export default function App() {
+// Login gate: unauthenticated users see the Login screen; the rest of the app
+// (and its providers) only mount once signed in.
+function Gate() {
+  const { authed } = useAuth()
+  if (!authed) return <Login />
   return (
     <ContentProvider>
       <SavedProvider>
@@ -63,5 +69,13 @@ export default function App() {
         </NavProvider>
       </SavedProvider>
     </ContentProvider>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <Gate />
+    </AuthProvider>
   )
 }

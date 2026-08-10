@@ -1,7 +1,8 @@
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, LogOut } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Icon } from '@/components/Icon'
 import { LessonCard } from '@/components/LessonCard'
+import { useAuth } from '@/context/AuthContext'
 import { useContent } from '@/context/ContentContext'
 import { useNav } from '@/context/NavContext'
 import { screenStagger, sectionStagger, fadeUp, springs } from '@/lib/animations'
@@ -10,6 +11,7 @@ const FEATURED_ID = 'release-timeline'
 
 export function Home() {
   const { openLesson, openCategory, setTab } = useNav()
+  const { logout } = useAuth()
   const { categories, lessons } = useContent()
   const featured = lessons.find((l) => l.id === FEATURED_ID) ?? lessons[0]
   const fresh = lessons.filter((l) => l.id !== featured.id).slice(0, 3)
@@ -22,9 +24,19 @@ export function Home() {
       initial="hidden"
       animate="visible"
     >
-      <motion.header variants={fadeUp} className="pt-5">
-        <p className="text-sm text-muted">Poseidon Academy</p>
-        <h1 className="mt-1 text-2xl font-bold text-text">Learn the music business.</h1>
+      <motion.header variants={fadeUp} className="flex items-start justify-between pt-5">
+        <div>
+          <p className="text-sm text-muted">Poseidon Academy</p>
+          <h1 className="mt-1 text-2xl font-bold text-text">Learn the music business.</h1>
+        </div>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={logout}
+          aria-label="Sign out"
+          className="mt-1 shrink-0 rounded-full border border-border bg-surface p-2 text-muted active:bg-surface-2 active:text-text"
+        >
+          <LogOut size={17} />
+        </motion.button>
       </motion.header>
 
       {/* Featured lesson — receives the stagger delay from the outer container */}
