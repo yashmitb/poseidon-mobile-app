@@ -71,3 +71,41 @@ body {
   -webkit-backdrop-filter: blur(20px) saturate(1.6);
   backdrop-filter: blur(20px) saturate(1.6);
 }
+
+/* ── Aurora background — slow-drifting gold light blooms behind the login
+   screen. Blurred, low-opacity radial gradients that never touch layout;
+   transform-only so they stay GPU-composited. ── */
+.aurora-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(64px);
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+@keyframes aurora-a {
+  0%   { transform: translate(-8%, -6%) scale(1); }
+  100% { transform: translate(12%, 14%) scale(1.28); }
+}
+@keyframes aurora-b {
+  0%   { transform: translate(6%, 8%) scale(1.1); }
+  100% { transform: translate(-12%, -10%) scale(0.9); }
+}
+@keyframes aurora-c {
+  0%   { transform: translate(0%, 10%) scale(0.95); }
+  100% { transform: translate(8%, -12%) scale(1.2); }
+}
+.aurora-a { animation: aurora-a 19s ease-in-out infinite alternate; }
+.aurora-b { animation: aurora-b 24s ease-in-out infinite alternate; }
+.aurora-c { animation: aurora-c 28s ease-in-out infinite alternate; }
+
+/* Sheen sweep — a soft highlight that travels across the primary button. */
+@keyframes sheen {
+  0%   { transform: translateX(-140%) skewX(-18deg); }
+  100% { transform: translateX(260%) skewX(-18deg); }
+}
+.sheen { animation: sheen 3.6s ease-in-out infinite; }
+
+/* Respect users who ask for less motion — freeze the ambient loops. */
+@media (prefers-reduced-motion: reduce) {
+  .aurora-a, .aurora-b, .aurora-c, .sheen { animation: none !important; }
+}
