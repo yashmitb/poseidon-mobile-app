@@ -138,6 +138,27 @@ ReleaseChecklist) with local `useState`, *not* through NavContext. That was a de
 simplification because the tools aren't lessons/categories. If you add more standalone
 tools, consider promoting them into NavContext as a third `detail.kind`.
 
+### Auth / login gate (`src/context/AuthContext.tsx`)
+
+The app is gated behind email/password login. `AuthProvider` is the outermost
+provider in `App.tsx`; a `Gate` component renders `Login` when unauthenticated and
+only mounts the rest of the app (Content/Saved/Nav providers + `Shell`) once signed in.
+
+- Auth is a **stateless bearer token** minted by the backend, stored in
+  `localStorage['poseidon.auth.v1']` as `{ token, email }`. Chosen over session
+  cookies because the app is a different origin than the backend and also runs in
+  Capacitor (`capacitor://localhost`), where cross-site cookies are unreliable.
+- `login`/`register` POST to the Academy auth API (see below) and persist the token;
+  `logout` clears it (sign-out button lives in the `Home` header).
+- On launch the stored token is revalidated against `GET /api/academy/auth/me`; a 401
+  drops it. Offline keeps the user signed in.
+- Password policy lives in `src/lib/password.ts` (8+ chars, one uppercase, one symbol)
+  and is enforced on sign-up **and** re-checked server-side.
+- This is an **access gate only** — content is still served from the public content
+  endpoint, not per-user. Locking content behind the token would be a follow-up.
+- Needs `VITE_API_BASE_URL` set (same var the content layer uses); without it, login
+  cannot reach the server.
+
 ### Saved / bookmarks (`src/context/SavedContext.tsx`)
 
 An array of bookmarked lesson IDs, persisted to `localStorage` under key
@@ -273,11 +294,13 @@ src/
   main.tsx                 — React root, imports index.css
   index.css                — Tailwind import + @theme tokens + safe-area helpers
   vite-env.d.ts            — VITE_API_BASE_URL ImportMetaEnv typing
-  App.tsx                  — providers (Content, Saved, Nav) + Shell (tab/detail switch + BottomNav)
+  App.tsx                  — AuthProvider + login Gate; once authed: Content/Saved/Nav providers + Shell
+
   data/
     content.ts             — Block/Lesson/Category/GlossaryTerm/ChecklistSection/ChecklistItem/QAItem types only
     seedContent.ts          — bundled placeholder content, offline-first-launch fallback only
   context/
+    AuthContext.tsx         — login gate: bearer token in localStorage, register/login/logout
     ContentContext.tsx      — fetches/caches Academy content API, falls back to seedContent
     NavContext.tsx         — tab + detail navigation store
     SavedContext.tsx       — bookmarked lesson IDs, localStorage-persisted
@@ -286,8 +309,11 @@ src/
     LessonCard.tsx         — tappable card with inline bookmark toggle
     Blocks.tsx             — renders a Lesson.body (Block[])
     Icon.tsx               — explicit lucide icon registry (tree-shaken)
+  lib/
+    password.ts             — shared password policy (8+ / uppercase / symbol), mirrors backend
   screens/
-    Home.tsx               — featured lesson + category grid + fresh picks
+    Login.tsx              — email/password login + sign-up screen (shown when unauthenticated)
+    Home.tsx               — featured lesson + category grid + fresh picks (sign-out in header)
     Learn.tsx              — list of all categories with lesson counts
     Tools.tsx              — hub; internal state switches to Glossary / ReleaseChecklist
     tools/Glossary.tsx     — searchable A–Z accordion over `glossary`
@@ -302,7 +328,7 @@ public/
 
 localStorage keys in use: `poseidon.content.v1` (cached Academy content + `updatedAt`),
 `poseidon.saved.v1` (bookmarks), `poseidon.checklist.release.v1` (checklist progress,
-keyed by `ChecklistItem.id`).
+keyed by `ChecklistItem.id`), `poseidon.auth.v1` (`{ token, email }` login session).
 
 ---
 
@@ -342,6 +368,10 @@ keyed by `ChecklistItem.id`).
 - [x] Per-category Q&A: `QAItem` type, `qa` in `ContentContext` (cached, back-compat
   defaulted), Q&A accordion on `CategoryDetail`; backend `academy_qa` table + public API
   `qa` field + admin Q&A tab (CRUD + bulk import) on poseidon-music-platform
+- [x] Email/password login gate: `AuthProvider` + `Login` screen, bearer token in
+  `localStorage`, sign-out in Home header; backend `academy_users` table + scrypt hashing
+  + HMAC token auth API (`/api/academy/auth/register|login|me`) on poseidon-music-platform,
+  same Railway DB. Password policy 8+/uppercase/symbol enforced both sides.
 - [x] Capacitor config for iOS/Android
 - [x] Bundle size fix (explicit icon registry)
 - [x] README + this CLAUDE.md
@@ -390,6 +420,14 @@ keyed by `ChecklistItem.id`).
   `src/data/content.ts`. `qa` is per-category Q&A (each entry has a `categoryId`).
   `updatedAt` is the newest `updated_at` across the backend's Academy tables (including
   `academy_qa`), used by `ContentContext` to skip re-caching when content hasn't changed.
+- **Academy auth API** (owned by the website-side backend, same Railway database):
+  `POST /api/academy/auth/register` and `/login` take `{ email, password }` and return
+  `{ token, user: { id, email } }`; `GET /api/academy/auth/me` validates the
+  `Authorization: Bearer <token>`. Accounts live in `academy_users` (passwords
+  scrypt-hashed); the token is an HMAC-signed stateless token (built-in `crypto`, no new
+  deps), signed with `ACADEMY_JWT_SECRET` (falls back to `SESSION_SECRET`). Routes use
+  open CORS since they carry no cookies. This is separate from the website's own
+  Google-OAuth users.
 - **Admin**: a single dedicated Academy admin login (env-var-based, `AcademyAdminPage.tsx`)
   lives on the website repo and manages Academy content — this app has no admin UI of
   its own.
