@@ -18,6 +18,9 @@ export interface Lesson {
   readMins: number
   level: 'Beginner' | 'Intermediate' | 'Advanced'
   body: Block[]
+  // Optional external resource URL (YouTube, blog, IG). When set, the lesson is
+  // a link-out resource: the reader shows an "Open resource" button.
+  link?: string
 }
 
 export interface Category {

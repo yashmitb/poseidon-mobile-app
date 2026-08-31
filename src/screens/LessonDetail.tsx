@@ -1,4 +1,4 @@
-import { ArrowLeft, Bookmark, Clock } from 'lucide-react'
+import { ArrowLeft, Bookmark, Clock, ExternalLink } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Blocks } from '@/components/Blocks'
 import { useContent } from '@/context/ContentContext'
@@ -79,14 +79,37 @@ export function LessonDetail({ id }: { id: string }) {
           </p>
         )}
         <h1 className="mt-2 text-2xl font-bold leading-tight text-text">{lesson.title}</h1>
-        <div className="mt-3 flex items-center gap-3 text-xs text-muted">
-          <span className="flex items-center gap-1">
-            <Clock size={13} /> {lesson.readMins} min read
-          </span>
-          <span className="rounded-full border border-border px-2 py-0.5">
-            {lesson.level}
-          </span>
-        </div>
+
+        {/* Description / summary — the lead line, shown for every lesson. */}
+        {lesson.summary && (
+          <p className="mt-3 text-[15px] leading-relaxed text-muted">{lesson.summary}</p>
+        )}
+
+        {/* Read-time + level only make sense for written lessons, not link-out
+            resources — hide them when this is an external resource. */}
+        {!lesson.link && (
+          <div className="mt-3 flex items-center gap-3 text-xs text-muted">
+            <span className="flex items-center gap-1">
+              <Clock size={13} /> {lesson.readMins} min read
+            </span>
+            <span className="rounded-full border border-border px-2 py-0.5">
+              {lesson.level}
+            </span>
+          </div>
+        )}
+
+        {/* External resource — a prominent tap target that opens the link. */}
+        {lesson.link && (
+          <motion.a
+            href={lesson.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            whileTap={{ scale: 0.98 }}
+            className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-gold-soft to-gold px-4 py-3.5 text-sm font-semibold text-bg shadow-[0_8px_24px_-8px_rgba(201,169,78,0.6)]"
+          >
+            Open resource <ExternalLink size={16} />
+          </motion.a>
+        )}
 
         {/* Blocks handles its own internal stagger */}
         <div className="mt-6">

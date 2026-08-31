@@ -1,4 +1,4 @@
-import { Bookmark, Clock } from 'lucide-react'
+import { Bookmark, Clock, ExternalLink } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Lesson } from '@/data/content'
 import { useNav } from '@/context/NavContext'
@@ -51,12 +51,20 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
       </div>
 
       <div className="mt-3 flex items-center gap-3 text-xs text-muted">
-        <span className="flex items-center gap-1">
-          <Clock size={13} /> {lesson.readMins} min
-        </span>
-        <span className="rounded-full border border-border px-2 py-0.5">
-          {lesson.level}
-        </span>
+        {lesson.link ? (
+          <span className="flex items-center gap-1 text-gold">
+            <ExternalLink size={13} /> Resource
+          </span>
+        ) : (
+          <>
+            <span className="flex items-center gap-1">
+              <Clock size={13} /> {lesson.readMins} min
+            </span>
+            <span className="rounded-full border border-border px-2 py-0.5">
+              {lesson.level}
+            </span>
+          </>
+        )}
       </div>
     </motion.button>
   )
