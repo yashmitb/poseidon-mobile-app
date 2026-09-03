@@ -1,4 +1,4 @@
-import { ArrowRight, LogOut } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, LogOut } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Icon } from '@/components/Icon'
 import { LessonCard } from '@/components/LessonCard'
@@ -29,14 +29,26 @@ export function Home() {
           <p className="text-sm text-muted">Poseidon Academy</p>
           <h1 className="mt-1 text-2xl font-bold text-text">Learn the music business.</h1>
         </div>
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={logout}
-          aria-label="Sign out"
-          className="mt-1 shrink-0 rounded-full border border-border bg-surface p-2 text-muted active:bg-surface-2 active:text-text"
-        >
-          <LogOut size={17} />
-        </motion.button>
+        <div className="mt-1 flex shrink-0 items-center gap-2">
+          {/* Only shown when the Academy is mounted inside the platform (/learn);
+              links back to the shared hub at the domain root. */}
+          {import.meta.env.BASE_URL !== '/' && (
+            <a
+              href="/"
+              className="flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-2 text-xs font-medium text-muted active:bg-surface-2 active:text-text"
+            >
+              Platform <ArrowUpRight size={14} />
+            </a>
+          )}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={logout}
+            aria-label="Sign out"
+            className="rounded-full border border-border bg-surface p-2 text-muted active:bg-surface-2 active:text-text"
+          >
+            <LogOut size={17} />
+          </motion.button>
+        </div>
       </motion.header>
 
       {/* Featured lesson — receives the stagger delay from the outer container */}
