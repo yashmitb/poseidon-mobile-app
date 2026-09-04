@@ -34,7 +34,7 @@ export function Home() {
               links back to the shared hub at the domain root. */}
           {import.meta.env.BASE_URL !== '/' && (
             <a
-              href="/"
+              href="/platform"
               className="flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-2 text-xs font-medium text-muted active:bg-surface-2 active:text-text"
             >
               Platform <ArrowUpRight size={14} />
